@@ -89,18 +89,18 @@ look the same, so rod catches would be counted.
 
 Turn on **Show counting in chat** to see every XP drop and catch, and what it counted toward.
 
-## Running it
+## Installing
 
-RuneLite won't load a plugin from your computer when you start it the normal way. Until this is on
-the Plugin Hub, run it in the development client:
+In RuneLite, open the **Plugin Hub** (the plug icon in the Configuration panel), search for
+**Trawling Tracker** and click **Install**.
 
-1. One-time setup for Jagex accounts (from
-   [RuneLite's guide](https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts)):
-   1. From the Start menu, run **RuneLite (configure)**.
-   2. In **Client arguments**, add `--insecure-write-credentials` and click **Save**.
-   3. Start RuneLite from the Jagex Launcher once. This saves a login token to
-      `.runelite\credentials.properties`. Don't share that file: it logs into your account
-      without a password. Delete it to undo.
-2. Double-click `run-client.bat`. The first start takes a minute or two.
+## Development
 
-From a terminal in this folder, `.\gradlew run` (PowerShell) or `gradlew run` (cmd) does the same.
+To run the plugin from source in a development RuneLite client, run `./gradlew run`, or on Windows
+double-click `run-client.bat`. To log in with a Jagex account, do the one-time setup in
+[RuneLite's guide](https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts) first.
+
+Rates and mechanics come from the OSRS wiki pages for
+[Deep sea trawling](https://oldschool.runescape.wiki/w/Deep_sea_trawling),
+[Soup](https://oldschool.runescape.wiki/w/Soup) and
+[Angler's paint](https://oldschool.runescape.wiki/w/Angler%27s_paint).
