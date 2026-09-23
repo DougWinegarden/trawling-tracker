@@ -38,18 +38,34 @@ changing one sets it (a chat message confirms). Typed-in catches count at the re
 ## Soup: your attempts
 
 Soup rolls once per Sailing XP drop from **your** trawling net; your crewmates' drops never roll it.
-RuneLite only sees your Sailing XP total, so the plugin goes by the size of each drop:
+RuneLite only sees your Sailing XP total, so the plugin goes by the size of each drop, matching
+sizes exactly because the sizes in between are the crew's. With a cotton net:
 
 | Drop | Who | Counted? |
 | --- | --- | --- |
-| 15 | You, cotton net at the right depth | yes |
-| 25-26 | You and a crewmate on the same tick | yes (once) |
-| ~10-11 | Crewmate (depends on their Deckhandiness) | no |
-| 7-8 | You, net at the **wrong** depth | no, so keep your net at the right depth |
-| 30+ | Some other Sailing activity | no |
+| 15 | You, at the right depth | yes |
+| 7-8 | You, at the wrong depth (7.5 XP) | yes |
+| 25-26 | You and a crewmate on the same tick (15 + 10.5) | yes, once |
+| 18 | You at the wrong depth plus a crewmate (7.5 + 10.5) | yes, once |
+| 10-11 | A crewmate on their own (10.5 XP) | no |
+| 21 | Two crewmates on the same tick | no |
+| larger | Some other Sailing activity | no |
 
-Both limits can be changed in the settings. A drop that comes with "You gain some experience by
-watching your crew work" (crewmates trimming the sails) is never counted.
+The list lives in **Counted XP drops** in the settings. Drops only count while you're trawling,
+which means any catch, yours or the crew's, in the last minute; Sailing XP from anything else is
+ignored, as is a drop that comes with "You gain some experience by watching your crew work"
+(crewmates trimming the sails).
+
+The game keeps XP to one decimal place and shows it rounded down, which is why 7.5 arrives as 7 or
+8 while a whole 15 always arrives as 15.
+
+These sizes assume you have no **Keg of Horizon's Lure** aboard: its 2.5% Sailing XP bonus changes
+every size, so 15 becomes 15.3 and arrives as 15 or 16. Switching **Horizon's Lure aboard** on or
+off fills the list in with that keg's sizes (`7, 8, 15, 16, 18, 19, 26`), which you can then edit.
+A **Keg of Trawler's Trust** is fine either way, since its extra fish don't change XP.
+
+With another net or different crew Deckhandiness you'll see other sizes: turn on **Show counting in
+chat**, read yours off, and list them.
 
 ## Rare fish: everyone's catches
 

@@ -140,29 +140,33 @@ public interface TrawlingTrackerConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "minXp",
-		name = "Min XP per attempt",
-		description = "Smallest Sailing XP drop counted as one of your trawling attempts."
-			+ " A cotton net at the right depth gives you 15 per roll; crewmates get less.",
+		keyName = "horizonsLure",
+		name = "Horizon's Lure aboard",
+		description = "Fills Counted XP drops below with the sizes for a Keg of Horizon's Lure, whose"
+			+ " 2.5% Sailing XP bonus shifts every size, or back with the sizes for no keg. Switching"
+			+ " this replaces whatever the list holds; you can edit it afterwards.",
 		position = 1,
 		section = soupSection
 	)
-	default int minXp()
+	default boolean horizonsLure()
 	{
-		return 15;
+		return false;
 	}
 
 	@ConfigItem(
-		keyName = "maxXp",
-		name = "Max XP per attempt",
-		description = "Largest Sailing XP drop counted. Your roll and a crewmate's can land on the same"
-			+ " tick (about 25 XP together); anything bigger is some other Sailing activity.",
+		keyName = "countedXpDrops",
+		name = "Counted XP drops",
+		description = "Sailing XP drop sizes, comma separated, that count as one of your own trawling"
+			+ " attempts. The defaults suit a cotton net with no Keg of Horizon's Lure: 15 at the right"
+			+ " depth, 7-8 at the wrong depth, and you plus a crewmate on the same tick, which is 25-26"
+			+ " at the right depth and 18 at the wrong one. Crew-only drops, about 10-11, are left out."
+			+ " Empty goes back to the defaults.",
 		position = 2,
 		section = soupSection
 	)
-	default int maxXp()
+	default String countedXpDrops()
 	{
-		return 30;
+		return CountedXpDrops.DEFAULT;
 	}
 
 	@Range(min = 2)

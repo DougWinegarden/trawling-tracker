@@ -1,6 +1,7 @@
 package com.trawlingtracker;
 
 import com.google.inject.Provides;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -42,7 +43,7 @@ import net.runelite.client.util.Text;
 /**
  * Soup rolls once per Sailing XP drop from the player's own trawling net, never from a crewmate's.
  * The client is only told the new XP total, not what earned it, so attempts are picked out by the
- * size of each drop (see {@link TrawlingTrackerConfig#minXp()} and {@link TrawlingTrackerConfig#maxXp()}).
+ * size of each drop (see {@link CountedXpDrops}).
  * <p>
  * Rare fish roll once per successful catch by the player or a crewmate. Every catch posts a chat
  * message naming the fish. The shoal nearest the boat that yields that fish decides which rare fish,
@@ -62,6 +63,21 @@ public class TrawlingTrackerPlugin extends Plugin
 	private static final String PAINT_KEY = "paintCatches";
 	private static final String PAINT_MIXED_KEY = "paintCatches_MIXED";
 	private static final String CREW_XP_MESSAGE = "You gain some experience by watching your crew work";
+	private static final String COUNTED_DROPS_KEY = "countedXpDrops";
+	private static final String HORIZONS_LURE_KEY = "horizonsLure";
+
+	/**
+	 * How long after the last catch Sailing XP drops still count as trawling.
+	 */
+	private static final Duration TRAWLING_WINDOW = Duration.ofSeconds(60);
+
+	/**
+	 * Replaced by {@link #COUNTED_DROPS_KEY}, and migrated on startup.
+	 */
+	private static final String OLD_MIN_XP_KEY = "minXp";
+	private static final String OLD_MAX_XP_KEY = "maxXp";
+	private static final int OLD_MIN_XP_DEFAULT = 15;
+	private static final int OLD_MAX_XP_DEFAULT = 30;
 
 	/**
 	 * Settings that show each count and set it when edited.
@@ -110,6 +126,8 @@ public class TrawlingTrackerPlugin extends Plugin
 	@Getter
 	private PaintCounter paint;
 
+	private CountedXpDrops countedDrops;
+
 	/**
 	 * Any Sailing XP drop, crewmates' included: while trawling one lands every few ticks.
 	 */
@@ -145,6 +163,8 @@ public class TrawlingTrackerPlugin extends Plugin
 		crewXpThisTick = false;
 		shoals.clear();
 		shownCounts.clear();
+		migrateXpRange();
+		refreshCountedDrops();
 		HowItWorks.BY_KEY.forEach((key, text) -> configManager.setConfiguration(TrawlingTrackerConfig.GROUP, key, text));
 		overlayManager.add(overlay);
 
@@ -203,17 +223,21 @@ public class TrawlingTrackerPlugin extends Plugin
 			return;
 		}
 
-		boolean attempt = !fromCrew && drop >= config.minXp() && drop <= config.maxXp();
+		Instant now = Instant.now();
+		boolean trawling = isTrawling(now);
+		boolean attempt = !fromCrew && trawling && countedDrops.counts(drop);
 		if (attempt)
 		{
-			soup.recordAttempt(Instant.now());
+			soup.recordAttempt(now);
 			saveSoup();
 		}
 
 		if (config.showXpDropsInChat())
 		{
-			chat("Sailing XP drop: " + drop
-				+ (attempt ? " (Soup attempt)" : fromCrew ? " (crew XP, not counted)" : " (not counted)"));
+			chat("Sailing XP drop: " + drop + (attempt ? " (Soup attempt)"
+				: fromCrew ? " (crew XP, not counted)"
+				: !trawling ? " (not trawling, not counted)"
+				: " (not counted)"));
 		}
 	}
 
@@ -322,8 +346,30 @@ public class TrawlingTrackerPlugin extends Plugin
 			return;
 		}
 
-		// The How it works text boxes can be typed in, so put the text back
 		String key = event.getKey();
+		if (HORIZONS_LURE_KEY.equals(key))
+		{
+			// Fill the list in, so the player can see the sizes being counted and edit them after
+			String sizes = config.horizonsLure() ? CountedXpDrops.WITH_HORIZONS_LURE : CountedXpDrops.DEFAULT;
+			configManager.setConfiguration(TrawlingTrackerConfig.GROUP, COUNTED_DROPS_KEY, sizes);
+			refreshCountedDrops();
+			clientThread.invoke(() ->
+			{
+				if (client.getGameState() == GameState.LOGGED_IN)
+				{
+					chat("Counting Sailing XP drops of " + sizes + ".");
+				}
+			});
+			return;
+		}
+
+		if (COUNTED_DROPS_KEY.equals(key))
+		{
+			refreshCountedDrops();
+			return;
+		}
+
+		// The How it works text boxes can be typed in, so put the text back
 		String text = HowItWorks.BY_KEY.get(key);
 		if (text != null && !text.equals(event.getNewValue()))
 		{
@@ -397,6 +443,54 @@ public class TrawlingTrackerPlugin extends Plugin
 		}
 
 		chat(name + " set to " + QuantityFormatter.formatNumber(value) + ".");
+	}
+
+	private void refreshCountedDrops()
+	{
+		countedDrops = CountedXpDrops.parse(config.countedXpDrops());
+	}
+
+	/**
+	 * Whether a net is being worked at a shoal, so that Sailing XP from anything else isn't taken
+	 * for a trawling attempt. A catch says so plainly, and between you and your crew they come
+	 * many times a minute, so the last one being recent is enough to go on.
+	 */
+	private boolean isTrawling(Instant now)
+	{
+		Instant lastCatch = rareFish.getLastCatch();
+		return lastCatch != null && Duration.between(lastCatch, now).compareTo(TRAWLING_WINDOW) <= 0;
+	}
+
+	/**
+	 * The min/max XP range was replaced by a list of counted drop sizes. A range the player had
+	 * changed is written out as the list of the sizes it allowed, so their setting isn't lost.
+	 */
+	private void migrateXpRange()
+	{
+		Integer min = configManager.getConfiguration(TrawlingTrackerConfig.GROUP, OLD_MIN_XP_KEY, int.class);
+		Integer max = configManager.getConfiguration(TrawlingTrackerConfig.GROUP, OLD_MAX_XP_KEY, int.class);
+		if (min == null && max == null)
+		{
+			return;
+		}
+
+		int from = min == null ? OLD_MIN_XP_DEFAULT : min;
+		int to = max == null ? OLD_MAX_XP_DEFAULT : max;
+		boolean changedByPlayer = from != OLD_MIN_XP_DEFAULT || to != OLD_MAX_XP_DEFAULT;
+		boolean listStillDefault = CountedXpDrops.DEFAULT.equals(
+			configManager.getConfiguration(TrawlingTrackerConfig.GROUP, COUNTED_DROPS_KEY));
+		if (changedByPlayer && listStillDefault && from <= to && to - from < 64)
+		{
+			StringBuilder sizes = new StringBuilder();
+			for (int size = from; size <= to; size++)
+			{
+				sizes.append(sizes.length() == 0 ? "" : ", ").append(size);
+			}
+			configManager.setConfiguration(TrawlingTrackerConfig.GROUP, COUNTED_DROPS_KEY, sizes.toString());
+		}
+
+		configManager.unsetConfiguration(TrawlingTrackerConfig.GROUP, OLD_MIN_XP_KEY);
+		configManager.unsetConfiguration(TrawlingTrackerConfig.GROUP, OLD_MAX_XP_KEY);
 	}
 
 	private static boolean isCountKey(String key)
