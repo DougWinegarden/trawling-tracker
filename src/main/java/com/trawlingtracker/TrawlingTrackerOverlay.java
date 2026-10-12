@@ -82,18 +82,27 @@ class TrawlingTrackerOverlay extends OverlayPanel
 			.color(trawling ? Color.GREEN : Color.RED)
 			.build());
 
+		boolean compact = config.compactView();
 		if (showSoup)
 		{
 			int oneIn = config.dropRate();
 			long attempts = soup.getAttempts();
-			addHeader("Soup", "1/" + QuantityFormatter.formatNumber(oneIn));
-			addLine("Attempts:", QuantityFormatter.formatNumber(attempts));
-			int perHour = soup.attemptsPerHour(now);
-			if (perHour >= 0)
+			String count = QuantityFormatter.formatNumber(attempts);
+			if (compact)
 			{
-				addLine("Attempts/hr:", QuantityFormatter.formatNumber(perHour));
+				addNamedCount("Soup attempts:", count);
 			}
-			addOdds(new DropOdds().add(attempts, 1.0 / oneIn));
+			else
+			{
+				addHeader("Soup", "1/" + QuantityFormatter.formatNumber(oneIn));
+				addLine("Attempts:", count);
+				int perHour = soup.attemptsPerHour(now);
+				if (perHour >= 0)
+				{
+					addLine("Attempts/hr:", QuantityFormatter.formatNumber(perHour));
+				}
+			}
+			addOdds(new DropOdds().add(attempts, 1.0 / oneIn), compact);
 		}
 
 		if (showRareFish)
@@ -109,17 +118,33 @@ class TrawlingTrackerOverlay extends OverlayPanel
 
 			for (RareFish fish : shownFish)
 			{
-				addHeader(fish.getDisplayName(), shoal.rollFor(fish).rateText());
-				addLine("Catches:", QuantityFormatter.formatNumber(rareFish.getTotalCatches(fish)));
-				addOdds(rareFish.getOdds(fish));
+				String count = QuantityFormatter.formatNumber(rareFish.getTotalCatches(fish));
+				if (compact)
+				{
+					addNamedCount(fish.getDisplayName() + " catches:", count);
+				}
+				else
+				{
+					addHeader(fish.getDisplayName(), shoal.rollFor(fish).rateText());
+					addLine("Catches:", count);
+				}
+				addOdds(rareFish.getOdds(fish), compact);
 			}
 		}
 
 		if (showPaint)
 		{
-			addHeader("Angler's paint", "1/" + QuantityFormatter.formatNumber(PaintCounter.oneIn(rareFish.getCurrent())));
-			addLine("Your catches:", QuantityFormatter.formatNumber(paint.getTotalCatches()));
-			addOdds(paint.getOdds());
+			String count = QuantityFormatter.formatNumber(paint.getTotalCatches());
+			if (compact)
+			{
+				addNamedCount("Angler's paint catches:", count);
+			}
+			else
+			{
+				addHeader("Angler's paint", "1/" + QuantityFormatter.formatNumber(PaintCounter.oneIn(rareFish.getCurrent())));
+				addLine("Your catches:", count);
+			}
+			addOdds(paint.getOdds(), compact);
 		}
 
 		// Only used until the overlay is resized by hand, which then sets the width instead
@@ -144,6 +169,19 @@ class TrawlingTrackerOverlay extends OverlayPanel
 			.build());
 	}
 
+	/**
+	 * Compact view's one line per count, e.g. "Soup attempts: 41,212".
+	 */
+	private void addNamedCount(String name, String count)
+	{
+		measure(name, count);
+		panelComponent.getChildren().add(LineComponent.builder()
+			.left(name)
+			.leftColor(HEADER_COLOR)
+			.right(count)
+			.build());
+	}
+
 	private void addLine(String left, String right)
 	{
 		measure(left, right);
@@ -153,9 +191,12 @@ class TrawlingTrackerOverlay extends OverlayPanel
 			.build());
 	}
 
-	private void addOdds(DropOdds odds)
+	private void addOdds(DropOdds odds, boolean compact)
 	{
-		addLine("Drop rate:", String.format("%.3fx", odds.timesDropRate()));
+		if (!compact)
+		{
+			addLine("Drop rate:", String.format("%.3fx", odds.timesDropRate()));
+		}
 		addLine("Chance by now:", String.format("%.2f%%", 100 * odds.chanceByNow()));
 	}
 

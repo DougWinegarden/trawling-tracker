@@ -17,10 +17,22 @@ public interface TrawlingTrackerConfig extends Config
 	String COUNT_DESCRIPTION = "As of when you opened these settings. Change it while logged in to set"
 		+ " the count on that account.";
 
+	@ConfigItem(
+		keyName = "compactView",
+		name = "Compact view",
+		description = "Trim the overlay to two lines each: the name and count on one, the chance by now"
+			+ " under it. Attempts/hr, the drop rate multiple and the rate each roll is at are left out.",
+		position = 0
+	)
+	default boolean compactView()
+	{
+		return false;
+	}
+
 	@ConfigSection(
 		name = "How it works",
 		description = "What gets counted, and how the stats are worked out",
-		position = 0,
+		position = 1,
 		closedByDefault = true
 	)
 	String infoSection = "info";
@@ -28,21 +40,21 @@ public interface TrawlingTrackerConfig extends Config
 	@ConfigSection(
 		name = "Soup (pet)",
 		description = "Soup rolls once per Sailing XP drop from your own trawling net",
-		position = 1
+		position = 2
 	)
 	String soupSection = "soup";
 
 	@ConfigSection(
 		name = "Rare fish",
 		description = "Rare fish roll once per successful catch, by you or a crewmate",
-		position = 2
+		position = 3
 	)
 	String rareFishSection = "rareFish";
 
 	@ConfigSection(
 		name = "Angler's paint",
 		description = "Angler's paint rolls once per successful catch by you, never by a crewmate",
-		position = 3
+		position = 4
 	)
 	String paintSection = "paint";
 
@@ -50,7 +62,7 @@ public interface TrawlingTrackerConfig extends Config
 		name = "Your counts",
 		description = "Your counts on the account you're logged into. Change one to set it, e.g. to carry"
 			+ " over a total you kept before installing this plugin.",
-		position = 4,
+		position = 5,
 		closedByDefault = true
 	)
 	String countsSection = "counts";

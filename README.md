@@ -26,6 +26,19 @@ catches toward angler's paint (1/18,000, or 1/16,200 at mixed shoals).
  Chance by now:    8.16%
 ```
 
+**Compact view** in the settings trims that to two lines each, the name and count together:
+
+```
+ Trawling
+ Soup attempts:          41,212
+ Chance by now:          10.82%
+ Vibrant shoal
+ Swift marlin catches:    2,310
+ Chance by now:          31.96%
+ Angler's paint catches:  1,420
+ Chance by now:           8.16%
+```
+
 The settings page has a **How it works** section (click to open) explaining everything below.
 You can hide Soup, angler's paint, all rare fish, or each rare fish separately; counting carries
 on either way. Counts are saved per account. Right-click the overlay for **Reset Soup**,
